@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>روليت روسي - مسدس الميّه</title>
+<style>
+  :root{
+    --bg1: #fff9c4; /* soft summer yellow */
+    --bg2: #ccf2ff; /* sky blue */
+    --accent: #ffef8a;
+  }
+  html,body{height:100%;margin:0;font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;direction:rtl}
+  body{
+    background: linear-gradient(160deg,var(--bg2),var(--bg1));
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;box-sizing:border-box;
+  }
+  .card{
+    width: 760px;
+    max-width:95%;
+    background: rgba(255,255,255,0.6);
+    border-radius:16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding:20px;
+  }
+  h1{margin:0 0 12px 0;font-size:20px;text-align:center}
+  .game-area{
+    display:flex;gap:20px;align-items:center;justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  /* المسدس */
+  .gun-wrap{
+    width:420px;height:220px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    perspective:800px;
+  }
+  .gun{
+    width:360px;height:110px;border-radius:12px;
+    background: linear-gradient(90deg,#2b7bd3,#1e5fb0); /* blue body */
+    position:relative;
+    transform-origin:center left;
+    transition: transform 220ms ease;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  }
+  /* extra block to satisfy "مربع طويل بالعرض والتاني بالطول" */
+  .gun .block-vertical{
+    position:absolute;right:18px;top:-30px;width:70px;height:60px;
+    background: linear-gradient(180deg,#2b7bd3,#1e5fb0); border-radius:8px;
+    transform:rotate(18deg);
+    box-shadow: inset 0 -6px 12px rgba(255,255,255,0.05);
+  }
+  /* الخزان فوق في النص و لونو اخضر وهو اصغر بالعرض */
+  .chamber{
+    position:absolute;left:50%;top:-32px;transform:translateX(-50%);
+    width:110px;height:26px;border-radius:8px;background:linear-gradient(180deg,#2ecc71,#27ae60);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:12px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.12);
+  }
+  /* الزرار الاصفر (زناد) على الجسم */
+  .trigger{
+    position:absolute;left:18px;bottom:-18px;width:58px;height:28px;border-radius:6px;
+    background:linear-gradient(180deg,#ffd54f,#ffca28);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-weight:700;box-shadow:0 6px 10px rgba(0,0,0,0.12);
+    transition: transform 90ms ease;
+    user-select:none;
+  }
+
+  /* small visual for nozzle */
+  .nozzle{
+    position:absolute;left:-36px;top:35px;width:40px;height:20px;border-radius:8px;background:#1a4f6a;
+    box-shadow:inset 0 -6px 8px rgba(255,255,255,0.03);
+  }
+
+  /* water splash effect */
+  .splash{
+    position:absolute;left:-90px;top:18px;width:160px;height:160px;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(0.6);
+    transition: opacity 260ms ease, transform 500ms cubic-bezier(.2,.9,.4,1);
+  }
+  .splash .drop{
+    width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bfefff,#34b0ff);
+    box-shadow: 0 8px 22px rgba(52,176,255,0.28);
+    transform:translateY(0);
+    animation: drop 700ms ease forwards;
+  }
+  @keyframes drop{
+    0%{transform:translateY(8px) scale(0.9);opacity:0.9}
+    50%{transform:translateY(-18px) scale(1.05);opacity:1}
+    100%{transform:translateY(-42px) scale(0.9);opacity:0}
+  }
+
+  /* controls */
+  .controls{display:flex;flex-direction:column;gap:12px;align-items:center;min-width:220px}
+  .btn{
+    background:#fff;border:0;padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;
+    box-shadow:0 8px 18px rgba(0,0,0,0.08);
+  }
+  .btn.shoot{background:linear-gradient(180deg,#ffe082,#ffd54f);width:140px}
+  .btn.reset{background:linear-gradient(180deg,#e6ffe6,#c8f7c8);width:140px}
+  .info{font-weight:700;text-align:center;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.5)}
+  .result{
+    margin-top:8px;font-size:18px;font-weight:900;height:36px;display:flex;align-items:center;justify-content:center;
+  }
+
+  /* recoil animation class */
+  .recoil{
+    transform: translateX(-18px) rotate(-6deg) scale(0.98);
+    transition: transform 160ms cubic-bezier(.2,.9,.4,1);
+  }
+  .trigger-pulled{ transform: translateY(3px) translateX(-4px) rotate(-4deg); }
+
+  /* disabled */
+  .btn:disabled{opacity:0.5;cursor:not-allowed}
+  .muted{opacity:0.6}
+
+  /* footer small hint */
+  .hint{font-size:13px;color:#333;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>روليت روسي بمسدس الميّة — الثيم صيفي</h1>
+    <div class="game-area">
+      <div class="gun-wrap">
+        <div id="splash" class="splash"><div class="drop"></div></div>
+        <div id="gun" class="gun" aria-hidden="true">
+          <div class="block-vertical"></div>
+          <div class="nozzle"></div>
+          <div class="chamber" id="chamber">خزان</div>
+          <div id="trigger" class="trigger">اطلق</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div id="roundInfo" class="info">طلقة 1 من 6</div>
+        <button id="shootBtn" class="btn shoot">اضغط الرِزْر</button>
+        <button id="resetBtn" class="btn reset">اعادة</button>
+        <div id="result" class="result"></div>
+        <div class="hint">لو فزت هتظهر رسالة: "مبروك انت متبلتش" - لو خسرت: "ها ها اتبليت"</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // game state
+  const TOTAL = 6;
+  let current = 0; // index of next fire (0..5)
+  let loaded = Math.floor(Math.random()*TOTAL); // which chamber has water
+  let done = false;
+
+  // elements
+  const gun = document.getElementById('gun');
+  const trigger = document.getElementById('trigger');
+  const shootBtn = document.getElementById('shootBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const result = document.getElementById('result');
+  const roundInfo = document.getElementById('roundInfo');
+  const splash = document.getElementById('splash');
+
+  function updateRoundInfo(){
+    roundInfo.textContent = `طلقة ${Math.min(current+1, TOTAL)} من ${TOTAL}`;
+  }
+
+  function showResult(text, win){
+    result.textContent = text;
+    if(win){
+      result.style.color = '#1b5e20'; // green
+    } else {
+      result.style.color = '#b71c1c'; // red
+    }
+  }
+
+  function doShoot(){
+    if(done) return;
+    // animate recoil & trigger
+    gun.classList.add('recoil');
+    trigger.classList.add('trigger-pulled');
+
+    // small timeout to simulate action
+    setTimeout(()=>{
+      trigger.classList.remove('trigger-pulled');
+    }, 160);
+
+    // Check hit: if current equals loaded -> wet
+    const hit = (current === loaded);
+
+    // animate splash if hit
+    if(hit){
+      splash.style.opacity = '1';
+      splash.style.transform = 'scale(1)';
+      // after animation hide
+      setTimeout(()=>{ splash.style.opacity='0'; splash.style.transform='scale(0.6)'; }, 700);
+    }
+
+    // show message
+    if(hit){
+      showResult('ها ها اتبليت', false);
+      // disable shoot until reset
+      shootBtn.disabled = true;
+      done = true;
+    } else {
+      showResult('مبروك انت متبلتش', true);
+      // continue if still have shots left
+    }
+
+    // advance cylinder
+    current = (current + 1) % TOTAL;
+    updateRoundInfo();
+
+    // remove recoil after a short moment
+    setTimeout(()=>{ gun.classList.remove('recoil'); }, 220);
+
+    // if we've cycled through all shots and none hit (shouldn't happen normally since loaded exists),
+    // we still end game (safe guard)
+    if(!done && current === 0){
+      // if water hasn't fired yet, that means the cylinder had the water but user avoided? but keep playing
+      // keep game running
+    }
+  }
+
+  // wire buttons
+  shootBtn.addEventListener('click', doShoot);
+
+  resetBtn.addEventListener('click', ()=>{
+    // reset state
+    loaded = Math.floor(Math.random()*TOTAL);
+    current = 0;
+    done = false;
+    shootBtn.disabled = false;
+    result.textContent = '';
+    updateRoundInfo();
+  });
+
+  // init
+  updateRoundInfo();
+
+  // small UX: keyboard space to shoot, R to reset
+  window.addEventListener('keydown',(e)=>{
+    if(e.key === ' '){ e.preventDefault(); if(!shootBtn.disabled) doShoot(); }
+    if(e.key.toLowerCase() === 'r'){ resetBtn.click(); }
+  });
+</script>
+</body>
+</html>
